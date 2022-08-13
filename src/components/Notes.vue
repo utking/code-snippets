@@ -1,9 +1,10 @@
 <script setup>
-import { inject, onBeforeMount, ref } from 'vue'
+import { inject, onBeforeMount, onMounted, ref } from 'vue'
 import TagList from './TagList.vue';
 import NoteList from './NoteList.vue';
-import NoteContent from './NoteContent.vue';
 import { computed } from '@vue/reactivity';
+import NoteView from './NoteView.vue';
+import NoteEditor from './NoteEditor.vue';
 
 function injectStrict(key, fallback) {
   const resolved = inject(key, fallback)
@@ -18,34 +19,90 @@ const tags = ref([])
 const notes = ref([])
 const tagId = ref(0)
 const curNote = ref({})
+const editNote = ref(false)
+const error = ref(null)
 
 const loadTags = async () => {
-  const resp = await http.get('/tag')
-  tags.value = resp.data
+  try {
+    const resp = await http.get('/tag')
+    tags.value = resp.data
+    setActiveTag(tagId.value)
+  } catch (err) {
+    error.value = (err.response.data && err.response.data.Error) ? err.response.data.Error : err
+  }
 }
 
-const loadNotes = async (categoryId) => {
+const createNote = async (data) => {
+  data.TagID = tagId
+  data.Indent = parseInt(data.Indent)
   let resp
-  if (categoryId) {
-    resp = await http.get(`/note/category/${categoryId}`)
-  } else {
-    resp = await http.get('/note')
+  try {
+    if (data.ID) {
+      resp = await http.put(`/note/${data.ID}`, data)
+    } else {
+      resp = await http.post(`/note/`, data)
+    }
+    loadNotes(tagId.value)
+    error.value = ''
+  } catch (err) {
+    error.value = (err.response.data && err.response.data.Error) ? err.response.data.Error : err
   }
-  notes.value = resp.data
+}
+
+const deleteNote = async (id) => {
+  const resp = await http.delete(`/note/${id}`)
+  try {
+    loadNotes(tagId.value)
+    closeNoteEditor()
+    error.value = ''
+  } catch (err) {
+    error.value = (err.response.data && err.response.data.Error) ? err.response.data.Error : err
+  }
+}
+
+const closeNoteEditor = () => {
+  editNote.value = false
+  curNote.value = {ID: 0}
+}
+
+const toggleNoteEditor = async (id) => {
+  if (id) {
+    loadNote(id)
+  }
+  editNote.value = !!id
+}
+
+const loadNotes = async (tagID) => {
+  let resp
+  try {
+    if (tagID) {
+      resp = await http.get(`/note/category/${tagID}`)
+    } else {
+      resp = await http.get('/note')
+    }
+    notes.value = resp.data
+    error.value = ''
+    
+  } catch (err) {
+    error.value = (err.response.data && err.response.data.Error) ? err.response.data.Error : err
+  }
 }
 
 const loadNote = async (id) => {
   if (id) {
-    const resp = await http.get(`/note/${id}`)
-    curNote.value = resp.data
+    try {
+      const resp = await http.get(`/note/${id}`)
+      curNote.value = resp.data
+      error.value = ''
+    } catch (err) {
+      error.value = (err.response.data && err.response.data.Error) ? err.response.data.Error : err
+    }
   }
 }
 
-const getTagStats = () => {
-  loadTags()
-}
-
 const setActiveTag = (id) => {
+  // curNote.value = 0
+  closeNoteEditor()
   tags.value.forEach((el) => {
     el.active = el.ID === id
   })
@@ -55,22 +112,26 @@ const setActiveTag = (id) => {
   } else {
     notes.value = []
   }
-  setActiveNote(undefined)
+  setActiveNote()
   curNote.value = {}
 }
 
 const setActiveNote = (id) => {
+  closeNoteEditor()
   notes.value.forEach((el) => {
     el.active = el.ID === id
   })
   loadNote(id)
 }
 
-onBeforeMount(getTagStats)
+onMounted(loadTags)
 
 </script>
 
 <template>
+  <div v-if="error">
+    <p class="alert alert-danger">{{ error }}</p>
+  </div>
   <div class="row">
     <div class="col-sm-12 col-md-4 col-lg-3 col-xl-2 scrollable">
       <section>
@@ -93,22 +154,32 @@ onBeforeMount(getTagStats)
         <article>
           <NoteList
             :notes="notes"
+
             @note:clicked="setActiveNote" />
         </article>
       </section>
     </div>
     <div class="col-sm-12 col-md-12 col-lg-6 col-xl-8">
       <section>
-        <header class="h5">
-          Note Content
-        </header>
-        <article>
-          <NoteContent
-            :tag="curNote.TagID??''"
+        <article v-if="editNote || !curNote.ID">
+          <NoteEditor
+            :orig-note="curNote"
+            :tag-id="tagId"
+            
+            @note:close="closeNoteEditor"
+            @note:save="createNote" />
+        </article>
+        <article v-else>
+          <NoteView
+            :id="curNote.ID"
             :title="curNote.Title"
             :description="curNote.Description"
             :content="curNote.Content"
+            :syntax="curNote.Syntax"
             :indent="curNote.Indent"
+
+            @note:delete="deleteNote"
+            @note:edit="toggleNoteEditor"
           />
         </article>
       </section>

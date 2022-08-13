@@ -20,7 +20,7 @@ const emitClicked = (id) => {
       :id="tag.ID"
       :is_active="tag.active"
       :alias="tag.Alias"
-      :notes="tag.notes"
+      :notes="tag.Notes"
       @tag:clicked="emitClicked" />
   </ul>
 </template>

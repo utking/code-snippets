@@ -49,6 +49,9 @@ func main() {
 	noteGroup.GET("", controllers.GetNotes)
 	noteGroup.GET("/", controllers.GetNotes)
 	noteGroup.GET("/:id", controllers.GetNote)
+	noteGroup.POST("/", controllers.PostNote)
+	noteGroup.DELETE("/:id", controllers.DeleteNote)
+	noteGroup.PUT("/:id", controllers.PutNote)
 	noteGroup.GET("/category/:id", controllers.GetCategoryNotes)
 
 	e.Logger.Fatal(e.Start(":8080"))

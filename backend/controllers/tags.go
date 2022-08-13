@@ -14,10 +14,12 @@ import (
 type NoteTag struct {
 	Alias string `xorm:"varchar(32) not null"`
 	ID    uint16 `xorm:"id pk autoincr"`
+	Notes uint
 }
 
 func GetTags(c echo.Context) error {
-	var tags []NoteTag
+	tags := make([]NoteTag, 0)
+	tags = append(tags, NoteTag{Alias: "[untagged]", ID: 0})
 
 	cc, ok := c.(*CustomContext)
 
@@ -25,6 +27,11 @@ func GetTags(c echo.Context) error {
 		if db, err := cc.DB(); err == nil {
 			_ = db.CreateTables(NoteTag{})
 			_ = db.SQL("SELECT * from note_tag").Find(&tags)
+
+			for i := 1; i < len(tags); i++ {
+				count, _ := db.Where("tag_id=?", tags[i].ID).Count(&Note{})
+				tags[i].Notes = uint(count)
+			}
 		}
 	}
 
