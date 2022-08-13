@@ -3,7 +3,7 @@
 defineProps({
   tag: String,
   description: String,
-  alias: String,
+  title: String,
   syntax: String,
   content: String,
   indent: Number,
@@ -22,7 +22,7 @@ defineProps({
           <label for="note-title" class="col-sm-3 col-form-label" aria-required="true">Title</label>
           <div class="col-sm-9">
             <input type="text" class="form-control" id="note-title"
-              placeholder="Snippet title" required>
+              placeholder="Snippet title" required :value="title">
           </div>
         </div>
 
@@ -30,7 +30,7 @@ defineProps({
           <label for="note-description" class="col-sm-3 col-form-label">Description</label>
           <div class="col-sm-9">
             <input type="text" class="form-control" id="note-description"
-              placeholder="Snippet description">
+              placeholder="Snippet description" :value="description">
           </div>
         </div>
         
@@ -38,7 +38,7 @@ defineProps({
           <label for="note-tag" class="col-sm-3 col-form-label" aria-required="true">Tag</label>
           <div class="col-sm-9">
             <input type="text" class="form-control" id="note-tag"
-              placeholder="Snippet tag" required>
+              placeholder="Snippet tag" required :value="tag">
           </div>
         </div>
       </div>
@@ -69,7 +69,7 @@ defineProps({
         </div>
         <div class="card-body">
           <textarea name="note-content" id="note-content" class="form-control"
-            rows="8" placeholder="Paste a snippet of code..."></textarea>
+            rows="8" placeholder="Paste a snippet of code..." :value="content"></textarea>
         </div>
         <div class="card-footer">
           <div class="d-grid gap-2 d-md-flex justify-content-md-end">

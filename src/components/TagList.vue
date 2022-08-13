@@ -17,9 +17,9 @@ const emitClicked = (id) => {
   <ul class="list-group list-group-flush">
     <TagItem
       v-for="tag in tags" v-bind:key="tag.id"
-      :id="tag.id"
+      :id="tag.ID"
       :is_active="tag.active"
-      :alias="tag.alias"
+      :alias="tag.Alias"
       :notes="tag.notes"
       @tag:clicked="emitClicked" />
   </ul>

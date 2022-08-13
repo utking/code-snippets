@@ -1,57 +1,69 @@
 <script setup>
-import { onBeforeMount, ref } from 'vue'
+import { inject, onBeforeMount, ref } from 'vue'
 import TagList from './TagList.vue';
 import NoteList from './NoteList.vue';
 import NoteContent from './NoteContent.vue';
 import { computed } from '@vue/reactivity';
 
-defineProps({
-  msg: String
-})
-
-const tags = ref([
-  {id: undefined, alias: "[untagged]", notes: 0},
-  {id: 0, alias: "mysql", notes: 1},
-  {id: 1, alias: "nginx", notes: 2},
-  {id: 2, alias: "elasticsearch", notes: 1},
-])
-
-const notes = ref([
-  {id: 0, tag_id: 1, title: 'Some note', active: 0},
-  {id: 1, tag_id: 0, title: 'Some important SELECT', active: 0},
-  {id: 2, tag_id: 2, title: 'Drop ES index', active: 0},
-  {id: 3, tag_id: 2, title: 'List indices', active: 0},
-])
-
-const tagId = ref(undefined)
-
-const getTagStats = () => {
-  tags.value.forEach((tag) => {
-    const items = notes.value.filter((el) => {
-      return el.tag_id === tag.id
-    })
-    tag.notes = items.length
-  })
+function injectStrict(key, fallback) {
+  const resolved = inject(key, fallback)
+  if (!resolved) {
+    throw new Error(`Could not resolve ${key.description}`)
+  }
+  return resolved
 }
 
-const tagNotes = computed(() => {
-  return notes.value.filter((el) => {
-    return el.tag_id === tagId.value
-  })
-})
+const http = injectStrict('axios')
+const tags = ref([])
+const notes = ref([])
+const tagId = ref(0)
+const curNote = ref({})
+
+const loadTags = async () => {
+  const resp = await http.get('/tag')
+  tags.value = resp.data
+}
+
+const loadNotes = async (categoryId) => {
+  let resp
+  if (categoryId) {
+    resp = await http.get(`/note/category/${categoryId}`)
+  } else {
+    resp = await http.get('/note')
+  }
+  notes.value = resp.data
+}
+
+const loadNote = async (id) => {
+  if (id) {
+    const resp = await http.get(`/note/${id}`)
+    curNote.value = resp.data
+  }
+}
+
+const getTagStats = () => {
+  loadTags()
+}
 
 const setActiveTag = (id) => {
   tags.value.forEach((el) => {
-    el.active = el.id === id
+    el.active = el.ID === id
   })
   tagId.value = id
+  if (id) {
+    loadNotes(id)
+  } else {
+    notes.value = []
+  }
   setActiveNote(undefined)
+  curNote.value = {}
 }
 
 const setActiveNote = (id) => {
   notes.value.forEach((el) => {
-    el.active = el.id === id
+    el.active = el.ID === id
   })
+  loadNote(id)
 }
 
 onBeforeMount(getTagStats)
@@ -80,7 +92,7 @@ onBeforeMount(getTagStats)
         </header>
         <article>
           <NoteList
-            :notes="tagNotes"
+            :notes="notes"
             @note:clicked="setActiveNote" />
         </article>
       </section>
@@ -91,7 +103,13 @@ onBeforeMount(getTagStats)
           Note Content
         </header>
         <article>
-          <NoteContent />
+          <NoteContent
+            :tag="curNote.TagID??''"
+            :title="curNote.Title"
+            :description="curNote.Description"
+            :content="curNote.Content"
+            :indent="curNote.Indent"
+          />
         </article>
       </section>
     </div>

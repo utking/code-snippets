@@ -16,12 +16,12 @@ const emitClicked = (id) => {
 
 <template>
   <ul class="list-group list-group-flush">
-    <li v-for="note in notes" v-bind:key="note.id"
+    <li v-for="note in notes" v-bind:key="note.ID"
       class="list-group-item"
       :class={active:note.active}>
       <div>
-        <span type="button" @click="emitClicked(note.id)">
-          {{ note.title }}
+        <span type="button" @click="emitClicked(note.ID)">
+          {{ note.Title }}
         </span>
       </div>
     </li>
