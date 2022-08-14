@@ -4,13 +4,30 @@ import (
 	"code-snippets/config"
 	"code-snippets/controllers"
 	"code-snippets/repository"
+	"flag"
+	"fmt"
 	"log"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
+const (
+	httpPort = 8080
+)
+
 func main() {
+	var (
+		port       int
+		dbFilePath string
+	)
+
+	flag.IntVar(&port, "port", httpPort, "HTTP server port")
+	flag.StringVar(&dbFilePath, "db", repository.DefaultDBFilePath, "SQLite3 DB file path")
+	flag.Parse()
+
+	repository.InitDB(dbFilePath)
+
 	e := echo.New()
 
 	if err := config.InitTemplates(e); err != nil {
@@ -64,5 +81,5 @@ func main() {
 	noteGroup.PUT("/:id", controllers.PutNote)
 	noteGroup.GET("/category/:id", controllers.GetCategoryNotes)
 
-	e.Logger.Fatal(e.Start(":8080"))
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
 }

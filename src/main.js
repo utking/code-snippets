@@ -15,7 +15,7 @@ const routes = [
 ]
 
 const apiClient = axios.create({
-    baseURL: 'http://localhost:8080',
+    baseURL: '',
     withCredentials: true,
     headers: {
         'Accept': 'application/json',

@@ -3,7 +3,12 @@ package repository
 import (
 	"github.com/labstack/echo/v4"
 	_ "github.com/mattn/go-sqlite3"
+
 	"xorm.io/xorm"
+)
+
+const (
+	DefaultDBFilePath = "./snippets.db"
 )
 
 var (
@@ -11,8 +16,12 @@ var (
 	err error
 )
 
-func init() {
-	orm, err = xorm.NewEngine("sqlite3", "./snippets.db")
+func InitDB(dbFilePath string) {
+	if dbFilePath == "" {
+		orm, err = xorm.NewEngine("sqlite3", DefaultDBFilePath)
+	} else {
+		orm, err = xorm.NewEngine("sqlite3", dbFilePath)
+	}
 }
 
 type CustomContext struct {

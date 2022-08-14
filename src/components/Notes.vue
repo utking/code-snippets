@@ -71,7 +71,8 @@ const createNote = async (data) => {
       resp = await http.post(`/note/`, data)
     }
     curNote.value = resp.data
-    loadNotes(tagId.value)
+    loadTags()
+    loadNotes(tagId)
     setActiveNote(curNote.value.ID)
     noteMode.value = 'view'
     
@@ -81,13 +82,16 @@ const createNote = async (data) => {
 }
 
 const deleteNote = async (id) => {
-  const resp = await http.delete(`/note/${id}`)
-  try {
-    loadNotes(tagId.value)
-    noteMode.value = 'create'
-    error.value = ''
-  } catch (err) {
-    error.value = (err.response.data && err.response.data.Error) ? err.response.data.Error : err
+  if (confirm("Are you sure you want to delete the snippet?")) {
+    const resp = await http.delete(`/note/${id}`)
+    try {
+      loadTags()
+      loadNotes(tagId)
+      noteMode.value = 'create'
+      error.value = ''
+    } catch (err) {
+      error.value = (err.response.data && err.response.data.Error) ? err.response.data.Error : err
+    }
   }
 }
 

@@ -1,0 +1,16 @@
+[Unit]
+Description=Start Code Snippets Service
+After=network.target
+Wants=network-online.target
+
+[Service]
+Restart=always
+Type=simple
+ExecStart=/usr/bin/code-snippets "$CMD_PARAMS"
+WorkingDirectory=/var/lib/code-snippets
+User=code-snippets
+Group=code-snippets
+EnvironmentFile=-/etc/code-snippets/env
+
+[Install]
+WantedBy=multi-user.target

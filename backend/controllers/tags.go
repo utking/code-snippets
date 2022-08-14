@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	. "code-snippets/repository"
+	"code-snippets/repository"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -23,7 +23,7 @@ func GetTags(c echo.Context) error {
 	tags := make([]NoteTag, 0)
 	tags = append(tags, NoteTag{Alias: "[untagged]", ID: 0})
 
-	cc, ok := c.(*CustomContext)
+	cc, ok := c.(*repository.CustomContext)
 
 	if ok {
 		if db, err := cc.DB(); err == nil {
@@ -48,7 +48,7 @@ func PostTag(c echo.Context) error {
 	)
 
 	tag := new(NoteTag)
-	cc, ok := c.(*CustomContext)
+	cc, ok := c.(*repository.CustomContext)
 
 	if err := cc.Bind(tag); err != nil {
 		return cc.JSON(http.StatusConflict, map[string]interface{}{
@@ -121,7 +121,7 @@ func GetTag(c echo.Context) error {
 	if err == nil {
 		var tags []NoteTag
 
-		cc, ok := c.(*CustomContext)
+		cc, ok := c.(*repository.CustomContext)
 
 		if ok {
 			if db, err := cc.DB(); err == nil {
@@ -145,10 +145,11 @@ func DeleteTag(c echo.Context) error {
 	var (
 		count int64
 	)
+
 	id, err := strconv.ParseInt(c.Param("id"), 10, strconv.IntSize)
 
 	if err == nil {
-		cc, ok := c.(*CustomContext)
+		cc, ok := c.(*repository.CustomContext)
 
 		if ok {
 			if db, err := cc.DB(); err == nil {

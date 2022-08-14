@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	. "code-snippets/repository"
+	"code-snippets/repository"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -25,7 +25,7 @@ type Notes []Note
 func GetNotes(c echo.Context) error {
 	notes := make(Notes, 0)
 
-	cc, ok := c.(*CustomContext)
+	cc, ok := c.(*repository.CustomContext)
 
 	if ok {
 		if db, err := cc.DB(); err == nil {
@@ -49,7 +49,7 @@ func GetNote(c echo.Context) error {
 			has  bool
 		)
 
-		cc, ok := c.(*CustomContext)
+		cc, ok := c.(*repository.CustomContext)
 
 		if ok {
 			if db, err := cc.DB(); err == nil {
@@ -73,7 +73,7 @@ func GetCategoryNotes(c echo.Context) error {
 	notes := make(Notes, 0)
 
 	if err == nil {
-		cc, ok := c.(*CustomContext)
+		cc, ok := c.(*repository.CustomContext)
 
 		if ok {
 			if db, err := cc.DB(); err == nil {
@@ -93,7 +93,7 @@ func DeleteNote(c echo.Context) error {
 	id, err := strconv.ParseInt(c.Param("id"), 10, strconv.IntSize)
 
 	if err == nil {
-		cc, ok := c.(*CustomContext)
+		cc, ok := c.(*repository.CustomContext)
 
 		if ok {
 			if db, err := cc.DB(); err == nil {
@@ -105,7 +105,10 @@ func DeleteNote(c echo.Context) error {
 					})
 				}
 
-				fmt.Println(err)
+				return c.JSON(http.StatusNotFound, map[string]interface{}{
+					"Error":  err.Error(),
+					"Status": http.StatusNotFound,
+				})
 			}
 		}
 	}
@@ -123,7 +126,7 @@ func PostNote(c echo.Context) error {
 	)
 
 	note := new(Note)
-	cc, ok := c.(*CustomContext)
+	cc, ok := c.(*repository.CustomContext)
 
 	if err := cc.Bind(note); err != nil {
 		return cc.JSON(http.StatusConflict, map[string]interface{}{
@@ -200,7 +203,7 @@ func PutNote(c echo.Context) error {
 
 	if id, err := strconv.ParseInt(c.Param("id"), 10, strconv.IntSize); err == nil {
 		newNote := new(Note)
-		cc, ok := c.(*CustomContext)
+		cc, ok := c.(*repository.CustomContext)
 
 		if ok {
 			if err := cc.Bind(newNote); err != nil {
