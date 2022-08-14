@@ -2,7 +2,6 @@
 import { inject, onBeforeMount, onMounted, ref } from 'vue'
 import TagList from './TagList.vue';
 import NoteList from './NoteList.vue';
-import { computed } from '@vue/reactivity';
 import NoteView from './NoteView.vue';
 import NoteEditor from './NoteEditor.vue';
 
@@ -18,9 +17,11 @@ const http = injectStrict('axios')
 const tags = ref([])
 const notes = ref([])
 const tagId = ref(0)
+const curTag = ref({})
 const curNote = ref({})
-const editNote = ref(false)
+const noteMode = ref('create')
 const error = ref(null)
+const editTag = ref(false)
 
 const loadTags = async () => {
   try {
@@ -32,20 +33,50 @@ const loadTags = async () => {
   }
 }
 
+const updateTagAlias = async () => {
+  error.value = ''
+  try {
+    await http.post(`/tag/`, {ID: curTag.value.ID, Alias: curTag.value.Alias})
+    editTag.value = false
+    loadTags()
+  } catch (err) {
+    error.value = (err.response && err.response.data && err.response.data.Error) ? err.response.data.Error : err
+  }
+}
+
+const deleteTag = async () => {
+  error.value = ''
+  if (curTag.value.ID) {
+    try {
+      await http.delete(`/tag/${curTag.value.ID}`)
+      tagId.value = 0
+      editTag.value = false
+      loadTags()
+    } catch (err) {
+      error.value = (err.response && err.response.data && err.response.data.Error) ? err.response.data.Error : err
+    }
+  }
+}
+
 const createNote = async (data) => {
   data.TagID = tagId
   data.Indent = parseInt(data.Indent)
+  error.value = ''
   let resp
+
   try {
     if (data.ID) {
       resp = await http.put(`/note/${data.ID}`, data)
     } else {
       resp = await http.post(`/note/`, data)
     }
+    curNote.value = resp.data
     loadNotes(tagId.value)
-    error.value = ''
+    setActiveNote(curNote.value.ID)
+    noteMode.value = 'view'
+    
   } catch (err) {
-    error.value = (err.response.data && err.response.data.Error) ? err.response.data.Error : err
+    error.value = (err.response && err.response.data && err.response.data.Error) ? err.response.data.Error : err
   }
 }
 
@@ -53,7 +84,7 @@ const deleteNote = async (id) => {
   const resp = await http.delete(`/note/${id}`)
   try {
     loadNotes(tagId.value)
-    closeNoteEditor()
+    noteMode.value = 'create'
     error.value = ''
   } catch (err) {
     error.value = (err.response.data && err.response.data.Error) ? err.response.data.Error : err
@@ -61,15 +92,14 @@ const deleteNote = async (id) => {
 }
 
 const closeNoteEditor = () => {
-  editNote.value = false
-  curNote.value = {ID: 0}
+  noteMode.value = (curNote.value.ID ? 'view' : 'create')
 }
 
 const toggleNoteEditor = async (id) => {
   if (id) {
     loadNote(id)
   }
-  editNote.value = !!id
+  noteMode.value = 'edit'
 }
 
 const loadNotes = async (tagID) => {
@@ -101,25 +131,32 @@ const loadNote = async (id) => {
 }
 
 const setActiveTag = (id) => {
-  // curNote.value = 0
-  closeNoteEditor()
+  noteMode.value = 'create'
+
   tags.value.forEach((el) => {
     el.active = el.ID === id
+    if (el.active) {
+      curTag.value = el
+    }
   })
+
   tagId.value = id
   if (id) {
     loadNotes(id)
   } else {
     notes.value = []
   }
+
   setActiveNote()
   curNote.value = {}
 }
 
 const setActiveNote = (id) => {
-  closeNoteEditor()
   notes.value.forEach((el) => {
     el.active = el.ID === id
+    if (el.active) {
+      noteMode.value = 'view'
+    }
   })
   loadNote(id)
 }
@@ -135,9 +172,7 @@ onMounted(loadTags)
   <div class="row">
     <div class="col-sm-12 col-md-4 col-lg-3 col-xl-2 scrollable">
       <section>
-        <header class="h5">
-          Tags
-        </header>
+        <h5 class="title h5 mt-2">Tags</h5>
         <article>
           <TagList
             :tags="tags"
@@ -148,9 +183,20 @@ onMounted(loadTags)
     </div>
     <div class="col-sm-12 col-md-8 col-lg-3 col-xl-2 scrollable">
       <section>
-        <header class="h5">
-          Notes
-        </header>
+        <h5 class="title h5 mt-2" v-if="!editTag">
+          {{curTag.Alias}}
+          <span title="Edit tag" @click="editTag = true">&#9998;</span>
+          <span title="Remove tag" @click="deleteTag" v-if="curTag.ID">&Cross;</span>
+        </h5>
+        <div v-else class="input-group my-2">
+          <input class="form-control" type="text" v-model="curTag.Alias">
+          <button class="btn btn-outline-secondary" @click="updateTagAlias" title="Save">
+            &check;
+          </button>
+          <button class="btn btn-outline-secondary" @click="editTag = false" title="Cancel">
+            &cross;
+          </button>
+        </div>
         <article>
           <NoteList
             :notes="notes"
@@ -161,10 +207,17 @@ onMounted(loadTags)
     </div>
     <div class="col-sm-12 col-md-12 col-lg-6 col-xl-8">
       <section>
-        <article v-if="editNote || !curNote.ID">
+        <article v-if="noteMode === 'create'">
+          <NoteEditor
+            :title="curTag.Alias"
+            
+            @note:close="closeNoteEditor"
+            @note:save="createNote" />
+        </article>
+        <article v-else-if="noteMode === 'edit'">
           <NoteEditor
             :orig-note="curNote"
-            :tag-id="tagId"
+            :title="curTag.Alias"
             
             @note:close="closeNoteEditor"
             @note:save="createNote" />
@@ -173,10 +226,9 @@ onMounted(loadTags)
           <NoteView
             :id="curNote.ID"
             :title="curNote.Title"
-            :description="curNote.Description"
             :content="curNote.Content"
-            :syntax="curNote.Syntax"
             :indent="curNote.Indent"
+            :tag-alias="curTag.Alias"
 
             @note:delete="deleteNote"
             @note:edit="toggleNoteEditor"
@@ -196,6 +248,6 @@ onMounted(loadTags)
 
 .row > div {
   min-height: 50vh;
-  max-height: 100vh;
+  max-height: 90vh;
 }
 </style>

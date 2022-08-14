@@ -2,11 +2,10 @@
 
 const props = defineProps({
   id: Number,
-  description: String,
   title: String,
-  syntax: String,
   content: String,
   indent: Number,
+  tagAlias: String
 })
 
 const emits = defineEmits(['note:edit', 'note:delete'])
@@ -24,29 +23,12 @@ const emitDelete = () => {
 <template>
   <div class="card">
     <div class="card-body">
-      <div class="form mb-1">
-        <div class="row mb-1">
-          <label for="note-title" class="col-sm-3 col-form-label" aria-required="true">Title</label>
-          <div class="col-sm-9">
-            <input type="text" class="form-control" id="note-title"
-              placeholder="Snippet title" :value="title" disabled>
-          </div>
-        </div>
-
-        <div class="row mb-1">
-          <label for="note-description" class="col-sm-3 col-form-label">Description</label>
-          <div class="col-sm-9">
-            <input type="text" class="form-control" id="note-description"
-              placeholder="Snippet description" :value="description" disabled>
-          </div>
-        </div>
-      </div>
-
+      <h5 class="title h5">{{tagAlias}} | {{title}}</h5>
+      
       <!-- body -->
       <div class="card">
         <div class="card-body">
-          <textarea name="note-content" id="note-content" class="form-control" disabled
-            rows="8" :value="content"></textarea>
+          <pre v-highlightjs><code class="automatic">{{ content }}</code></pre>
         </div>
         <div class="card-footer">
           <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -66,4 +48,7 @@ const emitDelete = () => {
 </template>
 
 <style scoped>
+.hljs {
+  min-height: 70vh;
+}
 </style>

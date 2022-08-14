@@ -19,7 +19,13 @@ func main() {
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
-		AllowHeaders: []string{echo.HeaderAccessControlAllowOrigin, echo.HeaderContentType, echo.HeaderAccept},
+		AllowHeaders: []string{
+			echo.HeaderAccessControlAllowOrigin,
+			echo.HeaderContentType,
+			echo.HeaderAccept,
+			echo.HeaderAccessControlAllowCredentials,
+		},
+		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) (bool, error) {
 			return true, nil
 		},
@@ -31,6 +37,10 @@ func main() {
 			return next(cc)
 		}
 	})
+
+	e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
+		TokenLookup: "cookie:_csrf",
+	}))
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())

@@ -17,9 +17,10 @@ const emitClicked = () => {
 
 <template>
   <li :class="{active: is_active}"
+    type="button" @click="emitClicked"
     class="list-group-item d-flex justify-content-between align-items-start">
     <div>
-      <span type="button" @click="emitClicked">{{ alias }}</span>
+      <span>{{ alias }}</span>
     </div>
     <span class="badge bg-secondary rounded-pill">
       {{ notes }}

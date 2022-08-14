@@ -11,10 +11,12 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const UNTAGGED = "[untagged]"
+
 type NoteTag struct {
 	Alias string `xorm:"varchar(32) not null"`
 	ID    uint16 `xorm:"id pk autoincr"`
-	Notes uint
+	Notes uint   `xorm:"-"`
 }
 
 func GetTags(c echo.Context) error {
@@ -40,8 +42,9 @@ func GetTags(c echo.Context) error {
 
 func PostTag(c echo.Context) error {
 	var (
-		count  int64
-		result int64
+		count int64
+		// result     int64
+		// existingID int16
 	)
 
 	tag := new(NoteTag)
@@ -65,24 +68,45 @@ func PostTag(c echo.Context) error {
 		if db, err := cc.DB(); err == nil {
 			_ = db.CreateTables(NoteTag{})
 
-			count, _ = db.Where("alias=?", tag.Alias).Count(&NoteTag{})
-			if count > 0 {
-				return cc.JSON(http.StatusConflict, map[string]interface{}{
-					"Error":  "Tag exists",
-					"Status": http.StatusConflict,
-				})
+			if tag.ID <= 0 {
+				// Create a new tag
+				count, _ = db.Where("alias=?", tag.Alias).Count(&NoteTag{})
+				if count > 0 || tag.Alias == UNTAGGED {
+					return cc.JSON(http.StatusConflict, map[string]interface{}{
+						"Error":  "Tag name already exists",
+						"Status": http.StatusConflict,
+					})
+				}
+
+				_, err = db.InsertOne(*tag)
+
+				if err != nil {
+					return cc.JSON(http.StatusConflict, map[string]interface{}{
+						"Error":  err.Error(),
+						"Status": http.StatusNotFound,
+					})
+				}
+			} else {
+				// Update an existing tag
+				count, _ = db.Where("alias=? AND id<>?", tag.Alias, tag.ID).Count(&NoteTag{})
+
+				if count > 0 {
+					return cc.JSON(http.StatusConflict, map[string]interface{}{
+						"Error":  "Tag name already taken",
+						"Status": http.StatusConflict,
+					})
+				}
+
+				_, err = db.ID(tag.ID).Update(*tag)
+
+				if err != nil {
+					return cc.JSON(http.StatusConflict, map[string]interface{}{
+						"Error":  err.Error(),
+						"Status": http.StatusNotFound,
+					})
+				}
 			}
 
-			result, err = db.InsertOne(*tag)
-
-			if err != nil {
-				return cc.JSON(http.StatusConflict, map[string]interface{}{
-					"Error":  err.Error(),
-					"Status": http.StatusNotFound,
-				})
-			}
-
-			fmt.Println(result)
 		}
 	}
 
@@ -103,7 +127,6 @@ func GetTag(c echo.Context) error {
 			if db, err := cc.DB(); err == nil {
 				_ = db.CreateTables(NoteTag{})
 				err = db.SQL("SELECT * FROM note_tag WHERE id=?", id).Find(&tags)
-				fmt.Println(err)
 
 				if err == nil && len(tags) > 0 {
 					return c.JSON(http.StatusOK, tags[len(tags)-1])
@@ -119,6 +142,9 @@ func GetTag(c echo.Context) error {
 }
 
 func DeleteTag(c echo.Context) error {
+	var (
+		count int64
+	)
 	id, err := strconv.ParseInt(c.Param("id"), 10, strconv.IntSize)
 
 	if err == nil {
@@ -127,6 +153,17 @@ func DeleteTag(c echo.Context) error {
 		if ok {
 			if db, err := cc.DB(); err == nil {
 				_ = db.CreateTables(NoteTag{})
+
+				// Check if there are notes for the tag
+				count, _ = db.Where("tag_id=?", id).Count(&Note{})
+
+				if count > 0 {
+					return cc.JSON(http.StatusConflict, map[string]interface{}{
+						"Error":  "Tag has notes. Remove them first.",
+						"Status": http.StatusConflict,
+					})
+				}
+
 				_, err = db.ID(id).Delete(&NoteTag{})
 				fmt.Println(err)
 

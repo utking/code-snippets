@@ -19,8 +19,8 @@ const emitClicked = (id) => {
     <li v-for="note in notes" v-bind:key="note.ID"
       class="list-group-item"
       :class={active:note.active}>
-      <div>
-        <span type="button" @click="emitClicked(note.ID)">
+      <div type="button" @click="emitClicked(note.ID)">
+        <span>
           {{ note.Title }}
         </span>
       </div>

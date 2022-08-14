@@ -2,17 +2,18 @@ package controllers
 
 import (
 	. "code-snippets/repository"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"xorm.io/xorm"
 )
 
 type Note struct {
 	Title   string `xorm:"varchar(32) NOT NULL"`
-	Syntax  string `xorm:"varchar(32) NOT NULL"`
 	Content string `xorm:"TEXT NOT NULL"`
 	TagID   uint16 `xorm:"tag_id NOT NULL"`
 	ID      uint16 `xorm:"id pk autoincr"`
@@ -53,9 +54,8 @@ func GetNote(c echo.Context) error {
 		if ok {
 			if db, err := cc.DB(); err == nil {
 				_ = db.CreateTables(Note{})
-				has, err = db.ID(id).Get(&note)
 
-				if err == nil && has {
+				if has, err = db.ID(id).Get(&note); err == nil && has {
 					return c.JSON(http.StatusOK, note)
 				}
 			}
@@ -78,8 +78,10 @@ func GetCategoryNotes(c echo.Context) error {
 		if ok {
 			if db, err := cc.DB(); err == nil {
 				_ = db.CreateTables(Note{})
-				err = db.Find(&notes, &Note{TagID: uint16(id)})
-				fmt.Println(err)
+
+				if err = db.Find(&notes, &Note{TagID: uint16(id)}); err != nil {
+					fmt.Println(err)
+				}
 			}
 		}
 	}
@@ -96,14 +98,14 @@ func DeleteNote(c echo.Context) error {
 		if ok {
 			if db, err := cc.DB(); err == nil {
 				_ = db.CreateTables(Note{})
-				_, err = db.ID(id).Delete(&Note{})
-				fmt.Println(err)
 
-				if err == nil {
+				if _, err = db.ID(id).Delete(&Note{}); err == nil {
 					return c.JSON(http.StatusOK, map[string]interface{}{
 						"Status": http.StatusOK,
 					})
 				}
+
+				fmt.Println(err)
 			}
 		}
 	}
@@ -116,7 +118,8 @@ func DeleteNote(c echo.Context) error {
 
 func PostNote(c echo.Context) error {
 	var (
-		count int64
+		count, noteID int64
+		result        sql.Result
 	)
 
 	note := new(Note)
@@ -131,7 +134,7 @@ func PostNote(c echo.Context) error {
 
 	if note.TagID <= 0 {
 		return cc.JSON(http.StatusConflict, map[string]interface{}{
-			"Error":  "Wrong tag",
+			"Error":  "Wrong or missing tag",
 			"Status": http.StatusBadRequest,
 		})
 	}
@@ -147,39 +150,55 @@ func PostNote(c echo.Context) error {
 		if db, err := cc.DB(); err == nil {
 			_ = db.CreateTables(Note{})
 
-			count, _ = db.Where("tag_id=? AND title=?", note.TagID, note.Title).Count(&Note{})
-			if count > 0 {
+			if count, _ = db.Where("tag_id=? AND title=?", note.TagID, note.Title).Count(&Note{}); count > 0 {
 				return cc.JSON(http.StatusConflict, map[string]interface{}{
 					"Error":  "The snippet with this alias exists for the tag",
 					"Status": http.StatusConflict,
 				})
 			}
 
-			_, err = db.InsertOne(*note)
-
-			if err != nil {
+			if _, err = db.InsertOne(*note); err != nil {
 				return cc.JSON(http.StatusConflict, map[string]interface{}{
 					"Error":  err.Error(),
 					"Status": http.StatusNotFound,
 				})
 			}
+
+			if result, err = db.Exec("SELECT last_insert_rowid()"); err != nil {
+				return cc.JSON(http.StatusConflict, map[string]interface{}{
+					"Error":  err.Error(),
+					"Status": http.StatusNotFound,
+				})
+			}
+
+			if noteID, err = result.LastInsertId(); err != nil {
+				return cc.JSON(http.StatusConflict, map[string]interface{}{
+					"Error":  err.Error(),
+					"Status": http.StatusNotFound,
+				})
+			}
+
+			var newNote Note
+
+			if _, err = db.ID(noteID).Get(&newNote); err == nil {
+				return c.JSON(http.StatusOK, newNote)
+			}
 		}
 	}
 
-	return cc.JSON(http.StatusOK, map[string]interface{}{
-		"Status": http.StatusOK,
+	return cc.JSON(http.StatusConflict, map[string]interface{}{
+		"Error":  "Bad context",
+		"Status": http.StatusNotFound,
 	})
 }
 
 func PutNote(c echo.Context) error {
 	var (
-		has          bool
 		existingNote Note
+		db           *xorm.Engine
 	)
 
-	id, err := strconv.ParseInt(c.Param("id"), 10, strconv.IntSize)
-
-	if err == nil {
+	if id, err := strconv.ParseInt(c.Param("id"), 10, strconv.IntSize); err == nil {
 		newNote := new(Note)
 		cc, ok := c.(*CustomContext)
 
@@ -207,13 +226,12 @@ func PutNote(c echo.Context) error {
 				})
 			}
 
-			if db, err := cc.DB(); err == nil {
+			if db, err = cc.DB(); err == nil {
 				_ = db.CreateTables(Note{})
 
-				if has, err = db.ID(id).Get(&existingNote); !has {
-					fmt.Println(err)
+				if _, err = db.ID(id).Get(&existingNote); err != nil {
 					return cc.JSON(http.StatusConflict, map[string]interface{}{
-						"Error":  "The snippet does not exist",
+						"Error":  err.Error(),
 						"Status": http.StatusNotFound,
 					})
 				}
@@ -226,16 +244,24 @@ func PutNote(c echo.Context) error {
 						"Status": http.StatusConflict,
 					})
 				}
-			}
-		}
 
-		return cc.JSON(http.StatusOK, map[string]interface{}{
-			"Status": http.StatusOK,
-		})
+				var newNote Note
+
+				if _, err = db.ID(id).Get(&newNote); err == nil {
+					return c.JSON(http.StatusOK, newNote)
+				}
+
+			}
+
+			return cc.JSON(http.StatusConflict, map[string]interface{}{
+				"Error":  err.Error(),
+				"Status": http.StatusNotFound,
+			})
+		}
 	}
 
 	return c.JSON(http.StatusNotFound, map[string]interface{}{
-		"Error":  "Snippet not found",
+		"Error":  "Bad context",
 		"Status": http.StatusNotFound,
 	})
 }
