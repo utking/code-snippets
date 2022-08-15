@@ -9,17 +9,16 @@
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0 d-flex">
           <li class="nav-item">
-            <router-link to="/" class="nav-link active" aria-current="page">Home</router-link>
+            <router-link to="/" class="nav-link" aria-current="page">Home</router-link>
           </li>
           <li class="nav-item">
-            <router-link to="/about" class="nav-link active" aria-current="page">About</router-link>
+            <router-link to="/about" class="nav-link" aria-current="page">About</router-link>
           </li>
         </ul>
-        <form class="d-flex">
-          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-          <button class="btn btn-primary" type="submit">Search</button>
+        <form class="d-flex" method="post" action="/logout">
+          <button type="submit" class="btn btn-primary">Logout</button>
         </form>
       </div>
     </div>

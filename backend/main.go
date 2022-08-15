@@ -3,10 +3,12 @@ package main
 import (
 	"code-snippets/config"
 	"code-snippets/controllers"
+	auth "code-snippets/middleware"
 	"code-snippets/repository"
 	"flag"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -20,6 +22,7 @@ func main() {
 	var (
 		port       int
 		dbFilePath string
+		err        error
 	)
 
 	flag.IntVar(&port, "port", httpPort, "HTTP server port")
@@ -28,9 +31,13 @@ func main() {
 
 	repository.InitDB(dbFilePath)
 
+	if err = controllers.InitUser(os.Getenv("CS_USER"), os.Getenv("CS_PASSWORD")); err != nil {
+		log.Fatal(err)
+	}
+
 	e := echo.New()
 
-	if err := config.InitTemplates(e); err != nil {
+	if err = config.InitTemplates(e); err != nil {
 		log.Fatal(err)
 	}
 
@@ -61,9 +68,17 @@ func main() {
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(auth.AuthWithConfig(auth.AuthConfig{
+		Skipper: func(c echo.Context) bool {
+			return c.Request().URL.Path == "/login"
+		},
+		Validator: controllers.ValidateUser,
+	}))
 	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{Root: "./views"}))
 
 	e.GET("/", controllers.Loader)
+	e.Match([]string{"GET", "POST"}, "/login", controllers.Login)
+	e.POST("/logout", controllers.Logout)
 
 	tagGroup := e.Group("/tag")
 	tagGroup.GET("", controllers.GetTags)
