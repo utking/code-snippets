@@ -36,10 +36,7 @@ func Login(c echo.Context) error {
 			log.Fatal(errParams)
 		}
 
-		username := params.Get("username")
-		password := params.Get("password")
-
-		if _, err = ValidateUser(username, password, c); err == nil {
+		if _, err = ValidateUser(params.Get("username"), params.Get("password"), c); err == nil {
 			return c.Redirect(http.StatusSeeOther, "/")
 		}
 
@@ -58,10 +55,10 @@ func ValidateUser(_username, _password string, c echo.Context) (bool, error) {
 		return true, nil
 	}
 
-	if _username == username && _password == _password {
+	if _username == username && _password == password {
 		session.Values["authenticated"] = true
 		session.Values["username"] = username
-		session.Save(c.Request(), c.Response().Writer)
+		_ = session.Save(c.Request(), c.Response().Writer)
 
 		return true, nil
 	}

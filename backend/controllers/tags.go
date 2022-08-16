@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"code-snippets/repository"
-	"fmt"
+	. "code-snippets/types"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,22 +13,13 @@ import (
 
 const UNTAGGED = "[untagged]"
 
-type NoteTag struct {
-	Alias string `xorm:"varchar(32) not null"`
-	ID    uint16 `xorm:"id pk autoincr"`
-	Notes uint   `xorm:"-"`
-}
-
 func GetTags(c echo.Context) error {
 	tags := make([]NoteTag, 0)
 	tags = append(tags, NoteTag{Alias: "[untagged]", ID: 0})
 
-	cc, ok := c.(*repository.CustomContext)
-
-	if ok {
+	if cc, ok := c.(*repository.CustomContext); ok {
 		if db, err := cc.DB(); err == nil {
-			_ = db.CreateTables(NoteTag{})
-			_ = db.SQL("SELECT * from note_tag").Find(&tags)
+			_ = db.Find(&tags)
 
 			for i := 1; i < len(tags); i++ {
 				count, _ := db.Where("tag_id=?", tags[i].ID).Count(&Note{})
@@ -37,37 +28,32 @@ func GetTags(c echo.Context) error {
 		}
 	}
 
-	return cc.JSON(http.StatusOK, tags)
+	return c.JSON(http.StatusOK, tags)
 }
 
 func PostTag(c echo.Context) error {
 	var (
 		count int64
-		// result     int64
-		// existingID int16
 	)
 
 	tag := new(NoteTag)
-	cc, ok := c.(*repository.CustomContext)
 
-	if err := cc.Bind(tag); err != nil {
-		return cc.JSON(http.StatusConflict, map[string]interface{}{
+	if err := c.Bind(tag); err != nil {
+		return c.JSON(http.StatusConflict, map[string]interface{}{
 			"Error":  "Wrong parameters",
 			"Status": http.StatusBadRequest,
 		})
 	}
 
 	if strings.Trim(tag.Alias, " ") == "" {
-		return cc.JSON(http.StatusConflict, map[string]interface{}{
+		return c.JSON(http.StatusConflict, map[string]interface{}{
 			"Error":  "Empty alias is not allowed",
 			"Status": http.StatusBadRequest,
 		})
 	}
 
-	if ok {
+	if cc, ok := c.(*repository.CustomContext); ok {
 		if db, err := cc.DB(); err == nil {
-			_ = db.CreateTables(NoteTag{})
-
 			if tag.ID <= 0 {
 				// Create a new tag
 				count, _ = db.Where("alias=?", tag.Alias).Count(&NoteTag{})
@@ -78,9 +64,7 @@ func PostTag(c echo.Context) error {
 					})
 				}
 
-				_, err = db.InsertOne(*tag)
-
-				if err != nil {
+				if _, err = db.InsertOne(*tag); err != nil {
 					return cc.JSON(http.StatusConflict, map[string]interface{}{
 						"Error":  err.Error(),
 						"Status": http.StatusNotFound,
@@ -88,49 +72,42 @@ func PostTag(c echo.Context) error {
 				}
 			} else {
 				// Update an existing tag
-				count, _ = db.Where("alias=? AND id<>?", tag.Alias, tag.ID).Count(&NoteTag{})
-
-				if count > 0 {
+				if count, _ = db.Where("alias=? AND id<>?", tag.Alias, tag.ID).Count(&NoteTag{}); count > 0 {
 					return cc.JSON(http.StatusConflict, map[string]interface{}{
 						"Error":  "Tag name already taken",
 						"Status": http.StatusConflict,
 					})
 				}
 
-				_, err = db.ID(tag.ID).Update(*tag)
-
-				if err != nil {
+				if _, err = db.ID(tag.ID).Update(*tag); err != nil {
 					return cc.JSON(http.StatusConflict, map[string]interface{}{
 						"Error":  err.Error(),
 						"Status": http.StatusNotFound,
 					})
 				}
 			}
-
 		}
 	}
 
-	return cc.JSON(http.StatusOK, map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]interface{}{
 		"Status": http.StatusOK,
 	})
 }
 
 func GetTag(c echo.Context) error {
-	id, err := strconv.ParseInt(c.Param("id"), 10, strconv.IntSize)
+	if id, err := strconv.ParseInt(c.Param("id"), BASE10, strconv.IntSize); err == nil {
+		var tag NoteTag
 
-	if err == nil {
-		var tags []NoteTag
-
-		cc, ok := c.(*repository.CustomContext)
-
-		if ok {
+		if cc, ok := c.(*repository.CustomContext); ok {
 			if db, err := cc.DB(); err == nil {
-				_ = db.CreateTables(NoteTag{})
-				err = db.SQL("SELECT * FROM note_tag WHERE id=?", id).Find(&tags)
-
-				if err == nil && len(tags) > 0 {
-					return c.JSON(http.StatusOK, tags[len(tags)-1])
+				if ok, err = db.ID(id).Get(&tag); ok && err == nil {
+					return c.JSON(http.StatusOK, tag)
 				}
+
+				return c.JSON(http.StatusNotFound, map[string]interface{}{
+					"Error":  err.Error(),
+					"Status": http.StatusNotFound,
+				})
 			}
 		}
 	}
@@ -146,31 +123,25 @@ func DeleteTag(c echo.Context) error {
 		count int64
 	)
 
-	id, err := strconv.ParseInt(c.Param("id"), 10, strconv.IntSize)
-
-	if err == nil {
-		cc, ok := c.(*repository.CustomContext)
-
-		if ok {
+	if id, err := strconv.ParseInt(c.Param("id"), BASE10, strconv.IntSize); err == nil {
+		if cc, ok := c.(*repository.CustomContext); ok {
 			if db, err := cc.DB(); err == nil {
-				_ = db.CreateTables(NoteTag{})
-
 				// Check if there are notes for the tag
-				count, _ = db.Where("tag_id=?", id).Count(&Note{})
-
-				if count > 0 {
+				if count, _ = db.Where("tag_id=?", id).Count(&Note{}); count > 0 {
 					return cc.JSON(http.StatusConflict, map[string]interface{}{
 						"Error":  "Tag has notes. Remove them first.",
 						"Status": http.StatusConflict,
 					})
 				}
 
-				_, err = db.ID(id).Delete(&NoteTag{})
-				fmt.Println(err)
-
-				if err == nil {
+				if _, err = db.ID(id).Delete(&NoteTag{}); err == nil {
 					return c.JSON(http.StatusOK, map[string]interface{}{
 						"Status": http.StatusOK,
+					})
+				} else {
+					return c.JSON(http.StatusNotFound, map[string]interface{}{
+						"Error":  err.Error(),
+						"Status": http.StatusBadRequest,
 					})
 				}
 			}

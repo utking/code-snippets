@@ -1,6 +1,8 @@
 package repository
 
 import (
+	. "code-snippets/types"
+
 	"github.com/labstack/echo/v4"
 	_ "github.com/mattn/go-sqlite3"
 
@@ -16,12 +18,32 @@ var (
 	err error
 )
 
-func InitDB(dbFilePath string) {
+func InitDB(dbFilePath string) (*xorm.Engine, error) {
+	var _dbFilePath string
+
 	if dbFilePath == "" {
-		orm, err = xorm.NewEngine("sqlite3", DefaultDBFilePath)
+		_dbFilePath = DefaultDBFilePath
 	} else {
-		orm, err = xorm.NewEngine("sqlite3", dbFilePath)
+		_dbFilePath = dbFilePath
 	}
+
+	if orm, err = xorm.NewEngine("sqlite3", _dbFilePath); err != nil {
+		return nil, err
+	}
+
+	return orm, nil
+}
+
+func InitTables() error {
+	if tagError := orm.CreateTables(NoteTag{}); err != nil {
+		return tagError
+	}
+
+	if noteError := orm.CreateTables(Note{}); err != nil {
+		return noteError
+	}
+
+	return nil
 }
 
 type CustomContext struct {

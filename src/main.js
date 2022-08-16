@@ -5,7 +5,6 @@ import About from './components/About.vue'
 import App from './App.vue'
 import {createRouter, createWebHistory} from 'vue-router'
 import axios, { AxiosInstance } from 'axios'
-import VueAxios from 'vue-axios'
 import VueHighlightJS from 'vue3-highlightjs'
 import 'highlight.js/styles/solarized-light.css'
 
@@ -15,7 +14,7 @@ const routes = [
 ]
 
 const apiClient = axios.create({
-    baseURL: '',
+    baseURL: import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL: '',
     withCredentials: true,
     headers: {
         'Accept': 'application/json',

@@ -29,7 +29,12 @@ func main() {
 	flag.StringVar(&dbFilePath, "db", repository.DefaultDBFilePath, "SQLite3 DB file path")
 	flag.Parse()
 
-	repository.InitDB(dbFilePath)
+	if _, err = repository.InitDB(dbFilePath); err != nil {
+		log.Fatal(err)
+	}
+	if err = repository.InitTables(); err != nil {
+		log.Fatal(err)
+	}
 
 	if err = controllers.InitUser(os.Getenv("CS_USER"), os.Getenv("CS_PASSWORD")); err != nil {
 		log.Fatal(err)
