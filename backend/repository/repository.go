@@ -1,7 +1,7 @@
 package repository
 
 import (
-	. "code-snippets/types"
+	"code-snippets/types"
 
 	"github.com/labstack/echo/v4"
 	_ "github.com/mattn/go-sqlite3"
@@ -14,12 +14,14 @@ const (
 )
 
 var (
-	orm *xorm.Engine
-	err error
+	orm  *xorm.Engine
+	_err error
 )
 
 func InitDB(dbFilePath string) (*xorm.Engine, error) {
-	var _dbFilePath string
+	var (
+		_dbFilePath string
+	)
 
 	if dbFilePath == "" {
 		_dbFilePath = DefaultDBFilePath
@@ -27,20 +29,32 @@ func InitDB(dbFilePath string) (*xorm.Engine, error) {
 		_dbFilePath = dbFilePath
 	}
 
-	if orm, err = xorm.NewEngine("sqlite3", _dbFilePath); err != nil {
-		return nil, err
+	if orm, _err = xorm.NewEngine("sqlite3", _dbFilePath); _err != nil {
+		return nil, _err
 	}
 
 	return orm, nil
 }
 
 func InitTables() error {
-	if tagError := orm.CreateTables(NoteTag{}); err != nil {
-		return tagError
+	if exists, _ := orm.IsTableExist(types.Note{}); !exists {
+		if err := orm.CreateTables(types.Note{}); err != nil {
+			return err
+		}
+
+		if err := orm.CreateIndexes(types.Note{}); err != nil {
+			return err
+		}
 	}
 
-	if noteError := orm.CreateTables(Note{}); err != nil {
-		return noteError
+	if exists, _ := orm.IsTableExist(types.User{}); !exists {
+		if err := orm.CreateTables(types.User{}); err != nil {
+			return err
+		}
+
+		if err := orm.CreateIndexes(types.User{}); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -51,5 +65,5 @@ type CustomContext struct {
 }
 
 func (c *CustomContext) DB() (*xorm.Engine, error) {
-	return orm, err
+	return orm, _err
 }

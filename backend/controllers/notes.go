@@ -12,20 +12,6 @@ import (
 	"xorm.io/xorm"
 )
 
-func GetNotes(c echo.Context) error {
-	notes := make(Notes, 0)
-
-	if cc, ok := c.(*repository.CustomContext); ok {
-		if db, err := cc.DB(); err == nil {
-			if err = db.Find(&notes); err != nil {
-				return c.JSON(http.StatusBadRequest, notes)
-			}
-		}
-	}
-
-	return c.JSON(http.StatusOK, notes)
-}
-
 func GetNote(c echo.Context) error {
 	if id, err := strconv.ParseInt(c.Param("id"), BASE10, strconv.IntSize); err == nil {
 		var (
@@ -47,13 +33,13 @@ func GetNote(c echo.Context) error {
 	})
 }
 
-func GetCategoryNotes(c echo.Context) error {
+func GetTagNotes(c echo.Context) error {
 	notes := make(Notes, 0)
 
-	if id, err := strconv.ParseInt(c.Param("id"), BASE10, strconv.IntSize); err == nil {
+	if tag := strings.Trim(c.Param("tag"), " "); tag != "" {
 		if cc, ok := c.(*repository.CustomContext); ok {
 			if db, err := cc.DB(); err == nil {
-				if err = db.Find(&notes, &Note{TagID: uint16(id)}); err != nil {
+				if err = db.Find(&notes, &Note{Tag: tag}); err != nil {
 					return c.JSON(http.StatusOK, map[string]interface{}{
 						"Error":  err.Error(),
 						"Status": http.StatusNotFound,
@@ -105,7 +91,7 @@ func PostNote(c echo.Context) error {
 		})
 	}
 
-	if note.TagID <= 0 {
+	if strings.Trim(note.Tag, " ") == "" {
 		return c.JSON(http.StatusConflict, map[string]interface{}{
 			"Error":  "Wrong or missing tag",
 			"Status": http.StatusBadRequest,
@@ -121,7 +107,7 @@ func PostNote(c echo.Context) error {
 
 	if cc, ok := c.(*repository.CustomContext); ok {
 		if db, err := cc.DB(); err == nil {
-			if count, _ = db.Where("tag_id=? AND title=?", note.TagID, note.Title).Count(&Note{}); count > 0 {
+			if count, _ = db.Where("tag=? AND title=?", note.Tag, note.Title).Count(&Note{}); count > 0 {
 				return cc.JSON(http.StatusConflict, map[string]interface{}{
 					"Error":  "The snippet with this alias exists for the tag",
 					"Status": http.StatusConflict,
@@ -182,7 +168,7 @@ func PutNote(c echo.Context) error {
 
 			newNote.ID = uint16(id)
 
-			if newNote.TagID <= 0 {
+			if strings.Trim(newNote.Tag, " ") == " " {
 				return cc.JSON(http.StatusConflict, map[string]interface{}{
 					"Error":  "Wrong tag",
 					"Status": http.StatusBadRequest,

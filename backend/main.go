@@ -85,21 +85,14 @@ func main() {
 	e.Match([]string{"GET", "POST"}, "/login", controllers.Login)
 	e.POST("/logout", controllers.Logout)
 
-	tagGroup := e.Group("/tag")
-	tagGroup.GET("", controllers.GetTags)
-	tagGroup.GET("/", controllers.GetTags)
-	tagGroup.POST("/", controllers.PostTag)
-	tagGroup.GET("/:id", controllers.GetTag)
-	tagGroup.DELETE("/:id", controllers.DeleteTag)
+	e.GET("/tag", controllers.GetTags)
 
 	noteGroup := e.Group("/note")
-	noteGroup.GET("", controllers.GetNotes)
-	noteGroup.GET("/", controllers.GetNotes)
 	noteGroup.GET("/:id", controllers.GetNote)
 	noteGroup.POST("/", controllers.PostNote)
 	noteGroup.DELETE("/:id", controllers.DeleteNote)
 	noteGroup.PUT("/:id", controllers.PutNote)
-	noteGroup.GET("/category/:id", controllers.GetCategoryNotes)
+	noteGroup.GET("/tag/:tag", controllers.GetTagNotes)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
 }
