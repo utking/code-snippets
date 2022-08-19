@@ -4,6 +4,7 @@ import (
 	"code-snippets/repository"
 	. "code-snippets/types"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	_ "github.com/mattn/go-sqlite3"
@@ -33,4 +34,61 @@ func GetTags(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, tags)
+}
+
+// Update tag
+func PutTag(c echo.Context) error {
+	var (
+		count int64
+	)
+
+	curTag := strings.Trim(c.Param("tag"), " ")
+
+	tag := new(NoteTag)
+	note := new(Note)
+
+	if err := c.Bind(tag); err != nil {
+		return c.JSON(http.StatusConflict, map[string]interface{}{
+			"Error":  "Wrong parameters",
+			"Status": http.StatusBadRequest,
+		})
+	}
+
+	note.Tag = strings.Trim(tag.Alias, " ")
+
+	if tag.Alias == "" {
+		return c.JSON(http.StatusConflict, map[string]interface{}{
+			"Error":  "Empty alias is not allowed",
+			"Status": http.StatusBadRequest,
+		})
+	}
+
+	if tag.Alias == curTag {
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"Status": http.StatusOK,
+		})
+	}
+
+	if cc, ok := c.(*repository.CustomContext); ok {
+		if db, err := cc.DB(); err == nil {
+			// Update an existing tag
+			if count, _ = db.Where("tag=?", tag.Alias).Count(&NoteTag{}); count > 0 {
+				return cc.JSON(http.StatusConflict, map[string]interface{}{
+					"Error":  "Tag name already taken",
+					"Status": http.StatusConflict,
+				})
+			}
+
+			if _, err = db.Where("tag=?", curTag).Update(*note); err != nil {
+				return cc.JSON(http.StatusConflict, map[string]interface{}{
+					"Error":  err.Error(),
+					"Status": http.StatusNotFound,
+				})
+			}
+		}
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"Status": http.StatusOK,
+	})
 }

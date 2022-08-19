@@ -91,7 +91,10 @@ func PostNote(c echo.Context) error {
 		})
 	}
 
-	if strings.Trim(note.Tag, " ") == "" {
+	note.Tag = strings.Trim(note.Tag, " ")
+	note.Title = strings.Trim(note.Title, " ")
+
+	if note.Tag == "" || note.Tag == untagged {
 		return c.JSON(http.StatusConflict, map[string]interface{}{
 			"Error":  "Wrong or missing tag",
 			"Status": http.StatusBadRequest,

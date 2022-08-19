@@ -4,13 +4,12 @@ const props = defineProps({
   notes: Number,
   alias: String,
   is_active: Boolean,
-  id: Number
 })
 
 const emits = defineEmits(['tag:clicked'])
 
 const emitClicked = () => {
-  emits('tag:clicked', props.id)
+  emits('tag:clicked', props.alias)
 }
 
 </script>

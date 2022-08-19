@@ -1,8 +1,8 @@
 <script setup>
 import { ref } from "@vue/reactivity"
-import { onBeforeMount, onMounted } from "@vue/runtime-core"
+import { onBeforeMount } from "@vue/runtime-core"
 
-const DEFAULT_INDENT = 4
+// const DEFAULT_INDENT = 4
 
 const props = defineProps({
   origNote: Object,
@@ -13,7 +13,7 @@ const note = ref({
   ID: Number,
   Title: String,
   Content: String,
-  Indent: Number,
+  Tag: String,
 })
 
 const emits = defineEmits(['note:save', 'note:close', 'note:delete'])
@@ -23,12 +23,12 @@ const resetModel = () => {
     note.value.ID = props.origNote.ID
     note.value.Title = props.origNote.Title
     note.value.Content = props.origNote.Content
-    note.value.Indent = props.origNote.Indent
+    note.value.Tag = props.origNote.Tag
   } else {
     note.value.ID = undefined
     note.value.Title = ''
     note.value.Content = ''
-    note.value.Indent = DEFAULT_INDENT
+    note.value.Tag = ''
   }
 }
 
@@ -40,7 +40,7 @@ const emitClose = () => {
   note.value.ID = undefined
   note.value.Title = ''
   note.value.Content = ''
-  note.value.Indent = DEFAULT_INDENT
+  note.value.Tag = ''
   emits("note:close")
 }
 
@@ -69,6 +69,15 @@ onBeforeMount(() => {
           <div class="col-sm-10">
             <input type="text" class="form-control" id="note-title"
               placeholder="Snippet title" required v-model="note.Title">
+          </div>
+        </div>
+        <div class="row mb-1">
+          <label for="note-tag" class="col-sm-2 col-form-label text-end" aria-required="true">
+            Tag
+          </label>
+          <div class="col-sm-10">
+            <input type="text" class="form-control" id="note-tag"
+              placeholder="Snippet tag" required v-model="note.Tag">
           </div>
         </div>
       </div>

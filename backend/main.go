@@ -75,7 +75,14 @@ func main() {
 	e.Use(middleware.Recover())
 	e.Use(auth.AuthWithConfig(auth.AuthConfig{
 		Skipper: func(c echo.Context) bool {
-			return c.Request().URL.Path == "/login"
+			for _, url := range []string{
+				"/login", "/register",
+			} {
+				if c.Request().URL.Path == url {
+					return true
+				}
+			}
+			return false
 		},
 		Validator: controllers.ValidateUser,
 	}))
@@ -83,9 +90,11 @@ func main() {
 
 	e.GET("/", controllers.Loader)
 	e.Match([]string{"GET", "POST"}, "/login", controllers.Login)
+	e.Match([]string{"GET", "POST"}, "/register", controllers.Register)
 	e.POST("/logout", controllers.Logout)
 
 	e.GET("/tag", controllers.GetTags)
+	e.PUT("/tag/:tag", controllers.PutTag)
 
 	noteGroup := e.Group("/note")
 	noteGroup.GET("/:id", controllers.GetNote)

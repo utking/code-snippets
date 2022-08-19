@@ -18,6 +18,7 @@ func LogoutHandler(c echo.Context, redirectURL string) error {
 	session, _ := Store.Get(c.Request(), "session.id")
 	session.Values["authenticated"] = false
 	session.Values["username"] = ""
+	session.Values["id"] = nil
 	_ = session.Save(c.Request(), c.Response().Writer)
 
 	return c.Redirect(http.StatusSeeOther, redirectURL)

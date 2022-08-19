@@ -1,9 +1,9 @@
 <script setup>
-import { inject, onBeforeMount, onMounted, ref } from 'vue'
-import TagList from './TagList.vue';
-import NoteList from './NoteList.vue';
-import NoteView from './NoteView.vue';
-import NoteEditor from './NoteEditor.vue';
+import { inject, onMounted, ref } from 'vue'
+import TagList from './TagList.vue'
+import NoteList from './NoteList.vue'
+import NoteView from './NoteView.vue'
+import NoteEditor from './NoteEditor.vue'
 
 function injectStrict(key, fallback) {
   const resolved = inject(key, fallback)
@@ -13,10 +13,11 @@ function injectStrict(key, fallback) {
   return resolved
 }
 
+const UNTAGGED = '[untagged]'
 const http = injectStrict('axios')
 const tags = ref([])
 const notes = ref([])
-const tagId = ref(0)
+const tagId = ref(UNTAGGED)
 const curTag = ref({})
 const curNote = ref({})
 const noteMode = ref('create')
@@ -36,7 +37,7 @@ const loadTags = async () => {
 const updateTagAlias = async () => {
   error.value = ''
   try {
-    await http.post(`/tag/`, {ID: curTag.value.ID, Alias: curTag.value.Alias})
+    await http.put(`/tag/${tagId.value}`, {ID: curTag.value.ID, Alias: curTag.value.Alias})
     editTag.value = false
     loadTags()
   } catch (err) {
@@ -46,10 +47,10 @@ const updateTagAlias = async () => {
 
 const deleteTag = async () => {
   error.value = ''
-  if (curTag.value.ID) {
+  if (curTag.value.Alias) {
     try {
-      await http.delete(`/tag/${curTag.value.ID}`)
-      tagId.value = 0
+      await http.delete(`/tag/${curTag.value.Alias}`)
+      tagId.value = UNTAGGED
       editTag.value = false
       loadTags()
     } catch (err) {
@@ -59,8 +60,6 @@ const deleteTag = async () => {
 }
 
 const createNote = async (data) => {
-  data.TagID = tagId
-  data.Indent = parseInt(data.Indent)
   error.value = ''
   let resp
 
@@ -110,11 +109,12 @@ const loadNotes = async (tagID) => {
   let resp
   try {
     if (tagID) {
-      resp = await http.get(`/note/category/${tagID}`)
+      resp = await http.get(`/note/tag/${tagID}`)
+      notes.value = resp.data
     } else {
       resp = await http.get('/note')
+      notes.value = []
     }
-    notes.value = resp.data
     error.value = ''
     
   } catch (err) {
@@ -136,9 +136,10 @@ const loadNote = async (id) => {
 
 const setActiveTag = (id) => {
   noteMode.value = 'create'
+  error.value = ''
 
   tags.value.forEach((el) => {
-    el.active = el.ID === id
+    el.active = el.Alias === id
     if (el.active) {
       curTag.value = el
     }
@@ -189,7 +190,7 @@ onMounted(loadTags)
       <section>
         <h5 class="title h5 mt-2" v-if="!editTag">
           {{curTag.Alias}}
-          <span title="Edit tag" @click="editTag = true">&#9998;</span>
+          <span title="Edit tag" @click="editTag = true" v-if="curTag.Alias">&#9998;</span>
           <span title="Remove tag" @click="deleteTag" v-if="curTag.ID">&Cross;</span>
         </h5>
         <div v-else class="input-group my-2">
@@ -235,8 +236,7 @@ onMounted(loadTags)
             :tag-alias="curTag.Alias"
 
             @note:delete="deleteNote"
-            @note:edit="toggleNoteEditor"
-          />
+            @note:edit="toggleNoteEditor" />
         </article>
       </section>
     </div>
