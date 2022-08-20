@@ -8,7 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -33,10 +32,6 @@ func main() {
 		log.Fatal(err)
 	}
 	if err = repository.InitTables(); err != nil {
-		log.Fatal(err)
-	}
-
-	if err = controllers.InitUser(os.Getenv("CS_USER"), os.Getenv("CS_PASSWORD")); err != nil {
 		log.Fatal(err)
 	}
 

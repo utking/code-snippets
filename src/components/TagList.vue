@@ -19,7 +19,7 @@ const emitClicked = (id) => {
       v-for="tag in tags" v-bind:key="tag.Alias"
       :is_active="tag.active"
       :alias="tag.Alias"
-      :notes="tag.Notes"
+      :notes="tag.Snippets"
 
       @tag:clicked="emitClicked" />
   </ul>

@@ -14,27 +14,10 @@ import (
 	"xorm.io/xorm"
 )
 
-var (
-	username, password string
-)
-
-func InitUser(_username, _password string) error {
-	if strings.Trim(_username, " ") == "" || strings.Trim(_password, " ") == "" {
-		return fmt.Errorf("username and password cannot be empty")
-	}
-
-	username = _username
-	password = _password
-
-	return nil
-}
-
 func Login(c echo.Context) error {
 	var err error
 
-	session, _ := middleware.Store.Get(c.Request(), "session.id")
-
-	if (session.Values["authenticated"] != nil) && session.Values["authenticated"] != false {
+	if IsLoggedIn(c) {
 		return c.Redirect(http.StatusSeeOther, "/")
 	}
 
@@ -61,9 +44,7 @@ func Login(c echo.Context) error {
 func Register(c echo.Context) error {
 	var err error
 
-	session, _ := middleware.Store.Get(c.Request(), "session.id")
-
-	if (session.Values["authenticated"] != nil) && session.Values["authenticated"] != false {
+	if IsLoggedIn(c) {
 		return c.Redirect(http.StatusSeeOther, "/")
 	}
 
@@ -146,33 +127,27 @@ func ValidateUser(_username, _password string, c echo.Context) (bool, error) {
 		db  *xorm.Engine
 	)
 
-	session, _ := middleware.Store.Get(c.Request(), "session.id")
-
-	if (session.Values["authenticated"] != nil) && session.Values["authenticated"] != false {
+	if IsLoggedIn(c) {
 		return true, nil
 	}
 
 	user := new(types.User)
 	user.Username = _username
+	err = fmt.Errorf("wrong credentials")
 
 	if cc, ok := c.(*repository.CustomContext); ok {
 		if db, err = cc.DB(); err == nil {
 			if _, err = db.Get(user); err == nil {
 				if user.CheckPasswordHash(_password, user.Hash) {
-					session.Values["authenticated"] = true
-					session.Values["username"] = _username
-					session.Values["id"] = user.ID
-					_ = session.Save(c.Request(), c.Response().Writer)
-
-					return true, nil
+					if err = SaveUserToSession(c, _username, user.ID); err == nil {
+						return true, nil
+					}
 				}
-
-				return false, fmt.Errorf("wrong credentials")
 			}
 		}
 	}
 
-	return false, fmt.Errorf("wrong credentials")
+	return false, err
 }
 
 func Logout(c echo.Context) error {

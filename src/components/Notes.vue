@@ -45,20 +45,6 @@ const updateTagAlias = async () => {
   }
 }
 
-const deleteTag = async () => {
-  error.value = ''
-  if (curTag.value.Alias) {
-    try {
-      await http.delete(`/tag/${curTag.value.Alias}`)
-      tagId.value = UNTAGGED
-      editTag.value = false
-      loadTags()
-    } catch (err) {
-      error.value = (err.response && err.response.data && err.response.data.Error) ? err.response.data.Error : err
-    }
-  }
-}
-
 const createNote = async (data) => {
   error.value = ''
   let resp
@@ -191,7 +177,6 @@ onMounted(loadTags)
         <h5 class="title h5 mt-2" v-if="!editTag">
           {{curTag.Alias}}
           <span title="Edit tag" @click="editTag = true" v-if="curTag.Alias">&#9998;</span>
-          <span title="Remove tag" @click="deleteTag" v-if="curTag.ID">&Cross;</span>
         </h5>
         <div v-else class="input-group my-2">
           <input class="form-control" type="text" v-model="curTag.Alias">

@@ -18,9 +18,11 @@ func GetNote(c echo.Context) error {
 			note Note
 		)
 
+		userID, _ := GetUserID(c)
+
 		if cc, ok := c.(*repository.CustomContext); ok {
 			if db, err := cc.DB(); err == nil {
-				if ok, err = db.ID(id).Get(&note); err == nil && ok {
+				if ok, err = db.ID(id).Where("user_id=?", userID).Get(&note); err == nil && ok {
 					return c.JSON(http.StatusOK, note)
 				}
 			}
@@ -35,11 +37,12 @@ func GetNote(c echo.Context) error {
 
 func GetTagNotes(c echo.Context) error {
 	notes := make(Notes, 0)
+	userID, _ := GetUserID(c)
 
 	if tag := strings.Trim(c.Param("tag"), " "); tag != "" {
 		if cc, ok := c.(*repository.CustomContext); ok {
 			if db, err := cc.DB(); err == nil {
-				if err = db.Find(&notes, &Note{Tag: tag}); err != nil {
+				if err = db.Find(&notes, &Note{Tag: tag, UserID: userID}); err != nil {
 					return c.JSON(http.StatusOK, map[string]interface{}{
 						"Error":  err.Error(),
 						"Status": http.StatusNotFound,
@@ -56,7 +59,9 @@ func DeleteNote(c echo.Context) error {
 	if id, err := strconv.ParseInt(c.Param("id"), BASE10, strconv.IntSize); err == nil {
 		if cc, ok := c.(*repository.CustomContext); ok {
 			if db, err := cc.DB(); err == nil {
-				if _, err = db.ID(id).Delete(&Note{}); err == nil {
+				userID, _ := GetUserID(c)
+
+				if _, err = db.ID(id).Where("user_id=?", userID).Delete(&Note{}); err == nil {
 					return c.JSON(http.StatusOK, map[string]interface{}{
 						"Status": http.StatusOK,
 					})
@@ -76,12 +81,14 @@ func DeleteNote(c echo.Context) error {
 	})
 }
 
+// Create a new note
 func PostNote(c echo.Context) error {
 	var (
 		count, noteID int64
 		result        sql.Result
 	)
 
+	userID, _ := GetUserID(c)
 	note := new(Note)
 
 	if err := c.Bind(note); err != nil {
@@ -93,6 +100,7 @@ func PostNote(c echo.Context) error {
 
 	note.Tag = strings.Trim(note.Tag, " ")
 	note.Title = strings.Trim(note.Title, " ")
+	note.UserID = userID
 
 	if note.Tag == "" || note.Tag == untagged {
 		return c.JSON(http.StatusConflict, map[string]interface{}{
@@ -110,7 +118,7 @@ func PostNote(c echo.Context) error {
 
 	if cc, ok := c.(*repository.CustomContext); ok {
 		if db, err := cc.DB(); err == nil {
-			if count, _ = db.Where("tag=? AND title=?", note.Tag, note.Title).Count(&Note{}); count > 0 {
+			if count, _ = db.Count(*note); count > 0 {
 				return cc.JSON(http.StatusConflict, map[string]interface{}{
 					"Error":  "The snippet with this alias exists for the tag",
 					"Status": http.StatusConflict,
@@ -160,6 +168,7 @@ func PutNote(c echo.Context) error {
 
 	if id, err := strconv.ParseInt(c.Param("id"), BASE10, strconv.IntSize); err == nil {
 		newNote := new(Note)
+		userID, _ := GetUserID(c)
 
 		if cc, ok := c.(*repository.CustomContext); ok {
 			if err = cc.Bind(newNote); err != nil {
@@ -170,6 +179,7 @@ func PutNote(c echo.Context) error {
 			}
 
 			newNote.ID = uint16(id)
+			newNote.UserID = userID
 
 			if strings.Trim(newNote.Tag, " ") == " " {
 				return cc.JSON(http.StatusConflict, map[string]interface{}{
@@ -186,7 +196,7 @@ func PutNote(c echo.Context) error {
 			}
 
 			if db, err = cc.DB(); err == nil {
-				if _, err = db.ID(id).Get(&existingNote); err != nil {
+				if _, err = db.ID(id).Where("user_id=?", userID).Get(&existingNote); err != nil {
 					return cc.JSON(http.StatusConflict, map[string]interface{}{
 						"Error":  err.Error(),
 						"Status": http.StatusNotFound,

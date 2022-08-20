@@ -67,7 +67,7 @@ onBeforeMount(() => {
             Title
           </label>
           <div class="col-sm-10">
-            <input type="text" class="form-control" id="note-title"
+            <input type="text" class="form-control" id="note-title" autocomplete="off"
               placeholder="Snippet title" required v-model="note.Title">
           </div>
         </div>

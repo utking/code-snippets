@@ -16,10 +16,11 @@ func GetTags(c echo.Context) error {
 	tags := make([]NoteTag, 0)
 	tags = append(tags, NoteTag{Alias: untagged, Snippets: 0})
 	uniqTags := make([]Note, 0)
+	userID, _ := GetUserID(c)
 
 	if cc, ok := c.(*repository.CustomContext); ok {
 		if db, err := cc.DB(); err == nil {
-			if err = db.Distinct("tag").Find(&uniqTags); err != nil {
+			if err = db.Where("user_id=?", userID).Distinct("tag").Find(&uniqTags); err != nil {
 				return c.JSON(http.StatusInternalServerError, map[string]interface{}{
 					"Error":  err.Error(),
 					"Status": http.StatusInternalServerError,
@@ -28,6 +29,7 @@ func GetTags(c echo.Context) error {
 
 			for _, tag := range uniqTags {
 				count, _ := db.Where("tag=?", tag.Tag).Count(&Note{})
+
 				tags = append(tags, NoteTag{Alias: tag.Tag, Snippets: uint64(count)})
 			}
 		}
@@ -43,6 +45,7 @@ func PutTag(c echo.Context) error {
 	)
 
 	curTag := strings.Trim(c.Param("tag"), " ")
+	userID, _ := GetUserID(c)
 
 	tag := new(NoteTag)
 	note := new(Note)
@@ -55,6 +58,7 @@ func PutTag(c echo.Context) error {
 	}
 
 	note.Tag = strings.Trim(tag.Alias, " ")
+	note.UserID = userID
 
 	if tag.Alias == "" {
 		return c.JSON(http.StatusConflict, map[string]interface{}{
@@ -72,14 +76,15 @@ func PutTag(c echo.Context) error {
 	if cc, ok := c.(*repository.CustomContext); ok {
 		if db, err := cc.DB(); err == nil {
 			// Update an existing tag
-			if count, _ = db.Where("tag=?", tag.Alias).Count(&NoteTag{}); count > 0 {
+			// Find there is an existing tag first
+			if count, _ = db.Where("tag=? AND user_id=?", tag.Alias, userID).Count(&NoteTag{}); count > 0 {
 				return cc.JSON(http.StatusConflict, map[string]interface{}{
 					"Error":  "Tag name already taken",
 					"Status": http.StatusConflict,
 				})
 			}
 
-			if _, err = db.Where("tag=?", curTag).Update(*note); err != nil {
+			if _, err = db.Where("tag=? AND user_id=?", curTag, userID).Update(*note); err != nil {
 				return cc.JSON(http.StatusConflict, map[string]interface{}{
 					"Error":  err.Error(),
 					"Status": http.StatusNotFound,
