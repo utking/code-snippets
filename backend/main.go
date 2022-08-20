@@ -19,13 +19,15 @@ const (
 
 func main() {
 	var (
-		port       int
-		dbFilePath string
-		err        error
+		NoRegistration bool
+		port           int
+		dbFilePath     string
+		err            error
 	)
 
 	flag.IntVar(&port, "port", httpPort, "HTTP server port")
 	flag.StringVar(&dbFilePath, "db", repository.DefaultDBFilePath, "SQLite3 DB file path")
+	flag.BoolVar(&NoRegistration, "no-reg", false, "Disable self-registration")
 	flag.Parse()
 
 	if _, err = repository.InitDB(dbFilePath); err != nil {
@@ -85,7 +87,13 @@ func main() {
 
 	e.GET("/", controllers.Loader)
 	e.Match([]string{"GET", "POST"}, "/login", controllers.Login)
-	e.Match([]string{"GET", "POST"}, "/register", controllers.Register)
+
+	if !NoRegistration {
+		e.Match([]string{"GET", "POST"}, "/register", controllers.Register)
+	} else {
+		e.GET("/register", controllers.Login)
+	}
+
 	e.POST("/logout", controllers.Logout)
 
 	e.GET("/tag", controllers.GetTags)
