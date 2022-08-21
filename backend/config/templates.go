@@ -12,10 +12,13 @@ func InitTemplates(e *echo.Echo) error {
 	if err := xt.ParseDir("views/", []string{".html"}); err != nil {
 		return err
 	}
+
 	t := &Template{
 		worker: xt,
 	}
+
 	e.Renderer = t
+
 	return nil
 }
 
@@ -26,5 +29,6 @@ type Template struct {
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	d := make(map[string]interface{}, 0)
 	d["data"] = data
+
 	return t.worker.ExecuteTemplate(w, name, d)
 }

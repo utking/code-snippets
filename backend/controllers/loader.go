@@ -7,5 +7,5 @@ import (
 )
 
 func Loader(c echo.Context) error {
-	return c.Render(http.StatusOK, "index.html", map[string]interface{}{})
+	return c.Render(http.StatusOK, "fe/index.html", map[string]interface{}{})
 }

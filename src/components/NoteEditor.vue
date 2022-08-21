@@ -2,8 +2,6 @@
 import { ref } from "@vue/reactivity"
 import { onBeforeMount } from "@vue/runtime-core"
 
-// const DEFAULT_INDENT = 4
-
 const props = defineProps({
   origNote: Object,
   title: String

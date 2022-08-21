@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -72,6 +73,12 @@ func main() {
 	e.Use(middleware.Recover())
 	e.Use(auth.AuthWithConfig(auth.AuthConfig{
 		Skipper: func(c echo.Context) bool {
+			// For shared snippets
+			if strings.HasPrefix(c.Request().URL.Path, "/s/") {
+				return true
+			}
+
+			// For login and register pages
 			for _, url := range []string{
 				"/login", "/register",
 			} {
@@ -79,6 +86,7 @@ func main() {
 					return true
 				}
 			}
+
 			return false
 		},
 		Validator: controllers.ValidateUser,
@@ -105,6 +113,7 @@ func main() {
 	noteGroup.DELETE("/:id", controllers.DeleteNote)
 	noteGroup.PUT("/:id", controllers.PutNote)
 	noteGroup.GET("/tag/:tag", controllers.GetTagNotes)
+	noteGroup.GET("/s/:hash", controllers.GetSharedNote)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
 }

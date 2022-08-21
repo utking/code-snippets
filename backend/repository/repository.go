@@ -37,6 +37,20 @@ func InitDB(dbFilePath string) (*xorm.Engine, error) {
 }
 
 func InitTables() error {
+	if exists, _ := orm.IsTableExist(types.User{}); !exists {
+		if err := orm.CreateTables(types.User{}); err != nil {
+			return err
+		}
+
+		if err := orm.CreateIndexes(types.User{}); err != nil {
+			return err
+		}
+
+		if err := orm.CreateUniques(types.User{}); err != nil {
+			return err
+		}
+	}
+
 	if exists, _ := orm.IsTableExist(types.Note{}); !exists {
 		if err := orm.CreateTables(types.Note{}); err != nil {
 			return err
@@ -45,14 +59,22 @@ func InitTables() error {
 		if err := orm.CreateIndexes(types.Note{}); err != nil {
 			return err
 		}
+
+		if err := orm.CreateUniques(types.Note{}); err != nil {
+			return err
+		}
 	}
 
-	if exists, _ := orm.IsTableExist(types.User{}); !exists {
-		if err := orm.CreateTables(types.User{}); err != nil {
+	if exists, _ := orm.IsTableExist(types.SharedNote{}); !exists {
+		if err := orm.CreateTables(types.SharedNote{}); err != nil {
 			return err
 		}
 
-		if err := orm.CreateIndexes(types.User{}); err != nil {
+		if err := orm.CreateIndexes(types.SharedNote{}); err != nil {
+			return err
+		}
+
+		if err := orm.CreateUniques(types.SharedNote{}); err != nil {
 			return err
 		}
 	}

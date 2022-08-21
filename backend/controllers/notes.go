@@ -35,6 +35,38 @@ func GetNote(c echo.Context) error {
 	})
 }
 
+func GetSharedNote(c echo.Context) error {
+	hash := strings.Trim(c.Param("hash"), " ")
+
+	if hash != "" {
+		var (
+			sharedNote SharedNote
+			note       Note
+		)
+
+		sharedNote.Hash = hash
+
+		if cc, ok := c.(*repository.CustomContext); ok {
+			if db, err := cc.DB(); err == nil {
+				if ok, err = db.Where("hash=?", hash).Get(&sharedNote); err == nil && ok {
+					if ok, err = db.Where("id=?", sharedNote.NoteID).Get(&note); err == nil && ok {
+						return c.Render(http.StatusOK, "share.html", map[string]interface{}{
+							"Snippet": note,
+							"Shared":  sharedNote,
+						})
+					}
+				}
+			}
+		}
+	}
+
+	return c.Render(http.StatusNotFound, "share.html", map[string]interface{}{
+		"Error":   "Snippet was not found",
+		"Status":  http.StatusNotFound,
+		"Snippet": nil,
+	})
+}
+
 func GetTagNotes(c echo.Context) error {
 	notes := make(Notes, 0)
 	userID, _ := GetUserID(c)

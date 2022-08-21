@@ -4,7 +4,7 @@ import Notes from './components/Notes.vue'
 import About from './components/About.vue'
 import App from './App.vue'
 import {createRouter, createWebHistory} from 'vue-router'
-import axios, { AxiosInstance } from 'axios'
+import axios from 'axios'
 import VueHighlightJS from 'vue3-highlightjs'
 import 'highlight.js/styles/solarized-light.css'
 

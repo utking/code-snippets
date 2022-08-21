@@ -1,6 +1,10 @@
 package types
 
-import "golang.org/x/crypto/bcrypt"
+import (
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
+)
 
 const (
 	BASE10          = 10
@@ -8,7 +12,7 @@ const (
 )
 
 type User struct {
-	Username string `xorm:"varchar(32) not null"`
+	Username string `xorm:"varchar(32) not null unique index"`
 	Hash     string `xorm:"varchar(128) not null"`
 	ID       uint16 `xorm:"id pk autoincr"`
 	Active   bool   `xorm:"active DEFAULT 1"`
@@ -26,16 +30,27 @@ func (u *User) CheckPasswordHash(password, hash string) bool {
 }
 
 type Note struct {
-	Title   string `xorm:"varchar(32) NOT NULL index(tag)"`
+	Title   string `xorm:"varchar(32) NOT NULL index('tag_note')"`
 	Content string `xorm:"TEXT NOT NULL"`
-	Tag     string `xorm:"varchar(32) NOT NULL index(tag)"`
+	Tag     string `xorm:"varchar(32) NOT NULL index('tag_note')"`
 	ID      uint16 `xorm:"id pk autoincr"`
 	UserID  uint16 `xorm:"user_id INTEGER NOT NULL"`
 }
 
 type Notes []Note
+
+func (n *Note) CalcHash() string {
+	return ""
+}
+
+type SharedNote struct {
+	ValidUntil time.Time `xorm:"valid_until DATE NOT NULL"`
+	Hash       string    `xorm:"varchar(32) NOT NULL unique index('hash')"`
+	NoteID     uint16    `xorm:"note_id INTEGER NOT NULL index"`
+	UserID     uint16    `xorm:"user_id INTEGER NOT NULL index"`
+}
+
 type NoteTag struct {
 	Alias    string
 	Snippets uint64
 }
-type NoteTags []NoteTag
