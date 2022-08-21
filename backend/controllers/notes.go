@@ -1,13 +1,14 @@
 package controllers
 
 import (
-	"code-snippets/repository"
-	. "code-snippets/types"
 	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/utking/code-snippets/repository"
+	. "github.com/utking/code-snippets/types"
 
 	"github.com/labstack/echo/v4"
 	"xorm.io/xorm"

@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"code-snippets/types"
+	"github.com/utking/code-snippets/types"
 
 	"github.com/labstack/echo/v4"
 	_ "github.com/mattn/go-sqlite3"

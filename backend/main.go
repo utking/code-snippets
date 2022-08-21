@@ -1,14 +1,15 @@
 package main
 
 import (
-	"code-snippets/config"
-	"code-snippets/controllers"
-	auth "code-snippets/middleware"
-	"code-snippets/repository"
 	"flag"
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/utking/code-snippets/config"
+	"github.com/utking/code-snippets/controllers"
+	auth "github.com/utking/code-snippets/middleware"
+	"github.com/utking/code-snippets/repository"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"

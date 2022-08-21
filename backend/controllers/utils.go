@@ -1,8 +1,9 @@
 package controllers
 
 import (
-	"code-snippets/middleware"
 	"fmt"
+
+	"github.com/utking/code-snippets/middleware"
 
 	"github.com/labstack/echo/v4"
 )

@@ -1,4 +1,4 @@
-module code-snippets
+module github.com/utking/code-snippets
 
 go 1.17
 

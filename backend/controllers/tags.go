@@ -1,10 +1,11 @@
 package controllers
 
 import (
-	"code-snippets/repository"
-	. "code-snippets/types"
 	"net/http"
 	"strings"
+
+	"github.com/utking/code-snippets/repository"
+	. "github.com/utking/code-snippets/types"
 
 	"github.com/labstack/echo/v4"
 	_ "github.com/mattn/go-sqlite3"

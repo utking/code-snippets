@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"code-snippets/middleware"
-	"code-snippets/repository"
-	"code-snippets/types"
+	"github.com/utking/code-snippets/middleware"
+	"github.com/utking/code-snippets/repository"
+	"github.com/utking/code-snippets/types"
 
 	"github.com/labstack/echo/v4"
 	"xorm.io/xorm"
