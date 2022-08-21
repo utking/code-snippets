@@ -1,0 +1,22 @@
+# .github/workflows/release.yaml
+
+on: 
+  release:
+    types: [created]
+
+jobs:
+  release-linux-amd64:
+    name: release linux/amd64
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: wangyoucao577/go-release-action@v1.22
+      with:
+        project_path: "./backend"
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        goversion: "https://dl.google.com/go/go1.17.1.linux-amd64.tar.gz"
+        goos: linux
+        goarch: amd64
+        overwrite: TRUE
+        ldflags: '-w -s'
+        extra_files: install.sh uninstall.sh code-snippets.service README.md env.dist views
