@@ -1,6 +1,7 @@
 import { createApp, h } from 'vue'
 import './style.css'
 import Notes from './components/Notes.vue'
+import SharedNote from './components/SharedNote.vue'
 import About from './components/About.vue'
 import App from './App.vue'
 import {createRouter, createWebHistory} from 'vue-router'
@@ -10,6 +11,7 @@ import 'highlight.js/styles/solarized-light.css'
 
 const routes = [
     { path: '/', component: Notes },
+    { path: '/note/fe/:hash', component: SharedNote },
     { path: '/about', component: About },
 ]
 

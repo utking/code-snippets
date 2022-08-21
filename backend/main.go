@@ -74,7 +74,9 @@ func main() {
 	e.Use(auth.AuthWithConfig(auth.AuthConfig{
 		Skipper: func(c echo.Context) bool {
 			// For shared snippets
-			if strings.HasPrefix(c.Request().URL.Path, "/note/s/") {
+			if strings.HasPrefix(c.Request().URL.Path, "/fe/assets/") ||
+				strings.HasPrefix(c.Request().URL.Path, "/note/s/") ||
+				strings.HasPrefix(c.Request().URL.Path, "/note/fe/") {
 				return true
 			}
 
@@ -104,16 +106,22 @@ func main() {
 
 	e.POST("/logout", controllers.Logout)
 
-	e.GET("/tag", controllers.GetTags)
-	e.PUT("/tag/:tag", controllers.PutTag)
+	tagGroup := e.Group("/tag")
+	tagGroup.GET("", controllers.GetTags)
+	tagGroup.GET("/", controllers.GetTags)
+	tagGroup.PUT("/:tag", controllers.PutTag)
 
 	noteGroup := e.Group("/note")
+	// REST-like
 	noteGroup.GET("/:id", controllers.GetNote)
 	noteGroup.POST("/", controllers.PostNote)
 	noteGroup.DELETE("/:id", controllers.DeleteNote)
 	noteGroup.PUT("/:id", controllers.PutNote)
+	// Custom
 	noteGroup.GET("/tag/:tag", controllers.GetTagNotes)
 	noteGroup.GET("/s/:hash", controllers.GetSharedNote)
+	noteGroup.GET("/fe/:hash", controllers.Loader)
+	noteGroup.POST("/share", controllers.ShareNote)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
 }

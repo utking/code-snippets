@@ -66,6 +66,23 @@ const createNote = async (data) => {
   }
 }
 
+const shareNote = async (data) => {
+  error.value = ''
+
+  if (!data.NoteID) {
+    return
+  }
+
+  try {
+    const resp = await http.post(`/note/share`, data)
+    curNote.value = resp.data
+    noteMode.value = 'view'
+    
+  } catch (err) {
+    error.value = (err.response && err.response.data && err.response.data.Error) ? err.response.data.Error : err
+  }
+}
+
 const deleteNote = async (id) => {
   if (confirm("Are you sure you want to delete the snippet?")) {
     const resp = await http.delete(`/note/${id}`)
@@ -219,9 +236,11 @@ onMounted(loadTags)
             :content="curNote.Content"
             :indent="curNote.Indent"
             :tag-alias="curTag.Alias"
+            :share-hash="curNote.ShareHash"
 
             @note:delete="deleteNote"
-            @note:edit="toggleNoteEditor" />
+            @note:edit="toggleNoteEditor"
+            @note:share="shareNote" />
         </article>
       </section>
     </div>

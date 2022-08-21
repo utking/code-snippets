@@ -3,6 +3,7 @@ package types
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -30,24 +31,25 @@ func (u *User) CheckPasswordHash(password, hash string) bool {
 }
 
 type Note struct {
-	Title   string `xorm:"varchar(32) NOT NULL index('tag_note')"`
-	Content string `xorm:"TEXT NOT NULL"`
-	Tag     string `xorm:"varchar(32) NOT NULL index('tag_note')"`
-	ID      uint16 `xorm:"id pk autoincr"`
-	UserID  uint16 `xorm:"user_id INTEGER NOT NULL"`
+	ShareHash string `xorm:"-"`
+	Title     string `xorm:"varchar(32) NOT NULL index('tag_note')"`
+	Content   string `xorm:"TEXT NOT NULL"`
+	Tag       string `xorm:"varchar(32) NOT NULL index('tag_note')"`
+	ID        uint16 `xorm:"id pk autoincr"`
+	UserID    uint16 `xorm:"user_id INTEGER NOT NULL"`
 }
 
 type Notes []Note
-
-func (n *Note) CalcHash() string {
-	return ""
-}
 
 type SharedNote struct {
 	ValidUntil time.Time `xorm:"valid_until DATE NOT NULL"`
 	Hash       string    `xorm:"varchar(32) NOT NULL unique index('hash')"`
 	NoteID     uint16    `xorm:"note_id INTEGER NOT NULL index"`
 	UserID     uint16    `xorm:"user_id INTEGER NOT NULL index"`
+}
+
+func (n *SharedNote) CalcHash() string {
+	return uuid.NewString()
 }
 
 type NoteTag struct {
