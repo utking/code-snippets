@@ -19,4 +19,4 @@ jobs:
         goarch: amd64
         overwrite: TRUE
         ldflags: '-w -s'
-        extra_files: install.sh uninstall.sh code-snippets.service README.md env.dist views
+        extra_files: ./backend/install.sh ./backend/uninstall.sh ./backend/code-snippets.service ./backend/README.md ./backend/env.dist ./backend/views
