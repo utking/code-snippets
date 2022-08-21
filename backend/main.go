@@ -74,7 +74,7 @@ func main() {
 	e.Use(auth.AuthWithConfig(auth.AuthConfig{
 		Skipper: func(c echo.Context) bool {
 			// For shared snippets
-			if strings.HasPrefix(c.Request().URL.Path, "/s/") {
+			if strings.HasPrefix(c.Request().URL.Path, "/note/s/") {
 				return true
 			}
 
