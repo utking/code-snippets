@@ -112,7 +112,7 @@ func createUser(_username, _password string, c echo.Context) error {
 				})
 			}
 
-			if _, err = db.InsertOne(*user); err == nil {
+			if _, err = db.Insert(user); err == nil {
 				_, err = ValidateUser(_username, _password, c)
 			}
 		}

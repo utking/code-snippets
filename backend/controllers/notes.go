@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -94,7 +93,7 @@ func ShareNote(c echo.Context) error {
 			}
 
 			// All is good, try to share it now
-			if _, err = db.InsertOne(*shareNote); err != nil {
+			if _, err = db.Insert(shareNote); err != nil {
 				return cc.JSON(http.StatusConflict, map[string]interface{}{
 					"Error":  err.Error(),
 					"Status": http.StatusNotFound,
@@ -192,8 +191,7 @@ func DeleteNote(c echo.Context) error {
 // Create a new snippet
 func PostNote(c echo.Context) error {
 	var (
-		count, snippetID int64
-		result           sql.Result
+		count int64
 	)
 
 	userID, _ := GetUserID(c)
@@ -233,32 +231,14 @@ func PostNote(c echo.Context) error {
 				})
 			}
 
-			if _, err = db.InsertOne(*snippet); err != nil {
+			if _, err = db.Insert(snippet); err != nil {
 				return cc.JSON(http.StatusConflict, map[string]interface{}{
 					"Error":  err.Error(),
 					"Status": http.StatusNotFound,
 				})
 			}
 
-			if result, err = db.Exec("SELECT last_insert_rowid()"); err != nil {
-				return cc.JSON(http.StatusConflict, map[string]interface{}{
-					"Error":  err.Error(),
-					"Status": http.StatusNotFound,
-				})
-			}
-
-			if snippetID, err = result.LastInsertId(); err != nil {
-				return cc.JSON(http.StatusConflict, map[string]interface{}{
-					"Error":  err.Error(),
-					"Status": http.StatusNotFound,
-				})
-			}
-
-			var newSnippet Note
-
-			if _, err = db.ID(snippetID).Get(&newSnippet); err == nil {
-				return c.JSON(http.StatusOK, newSnippet)
-			}
+			return c.JSON(http.StatusOK, snippet)
 		}
 	}
 
