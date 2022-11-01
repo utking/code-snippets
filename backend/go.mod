@@ -7,9 +7,9 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/sessions v1.2.1
 	github.com/labstack/echo/v4 v4.9.0
-	github.com/mattn/go-sqlite3 v1.14.14
+	github.com/mattn/go-sqlite3 v1.14.16
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
-	xorm.io/xorm v1.3.1
+	xorm.io/xorm v1.3.2
 )
 
 require (
